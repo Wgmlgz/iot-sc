@@ -8,5 +8,7 @@
   "thingsboard_url": "http://158.160.155.134:8080",
   "thingsboard_host": "158.160.155.134",
   "api_url": "https://bba1jmve6dp0u4ntatos.containers.yandexcloud.net",
-  "output_file": "output.mp4"
+  "output_file": "output.mp4",
+  "enable_video": true,
+  "update_chunk_size": 0
 }

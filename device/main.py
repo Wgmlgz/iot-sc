@@ -2,17 +2,11 @@ import subprocess
 import sys
 import time
 import requests
-import json
 import platform
 import time
 import paho.mqtt.client as mqtt
-import json
-
-config_path = "/etc/iot-sc/config.json"
-def load_config():
-    with open(config_path, "r") as config_file:
-        return json.load(config_file)
-
+from update import check_updates
+from configuration import load_config
 
 def send_telemetry(telemetry_data, auth_token, thingsboard_url):
     headers = {
@@ -107,6 +101,11 @@ def action():
     output_file = config["output_file"]
     enable_video = config["enable_video"]
     
+    try:
+        check_updates()
+    except Exception as e:
+        print('Error in update process', e)
+    
     if enable_video:
         if capture_video(camera_name, output_file=output_file):
             telemetry_data = send_video_to_api(
@@ -126,7 +125,7 @@ if __name__ == "__main__":
             interval = config.get("interval", 60)  # Default to 300 seconds if not set
             time.sleep(interval)
     except Exception as e:
-        print('Error', e)
+        print('Error', e.with_traceback())
         print('Cleanup done')
 
     print('Program ended')

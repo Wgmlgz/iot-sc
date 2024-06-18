@@ -4,9 +4,16 @@
 PROJECT_DIR="."
 
 # Define where to save the archive
-OUTPUT_DIR="./package/"
-VERSION="0.1-test"
-OUTPUT_FILE="$OUTPUT_DIR/device_package_$VERSION.tar.gz"
+OUTPUT_DIR="./package"
+
+
+# Extract firmware title and version from Python variables
+read -r TITLE VERSION <<< $(python3 -c "import sys; from device.configuration import current_fw_title, current_fw_version; print(current_fw_title, current_fw_version)")
+
+echo "Title: $TITLE"
+echo "Version: $VERSION"
+
+OUTPUT_FILE="$OUTPUT_DIR/${TITLE}_${VERSION}.tar.gz"
 
 # Remove existing archive if it exists
 if [ -f "$OUTPUT_FILE" ]; then

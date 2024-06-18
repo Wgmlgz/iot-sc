@@ -36,7 +36,7 @@ fi
 
 # Extract the base name without extension for the directory
 UPDATE_DIR_NAME=$(basename "$STORAGE_PATH" .tar.gz)
-NEW_DIR_PATH="$BASE_UPDATE_DIR/$UPDATE_DIR_NAME"
+NEW_DIR_PATH="$BASE_UPDATE_DIR/$UPDATE_DIR_NAME/iot-sc"
 
 # Create directory for new update
 mkdir -p "$NEW_DIR_PATH"
@@ -46,18 +46,18 @@ rm -rf "$NEW_DIR_PATH/*"
 echo "Extracting $STORAGE_PATH to $NEW_DIR_PATH..."
 tar -xzf "$STORAGE_PATH" -C "$NEW_DIR_PATH" || exit 1
 
-# Copy new files to the project directory
-echo "Copying files to the project directory..."
-mv "$PROJECT_DIR/" "$PROJECT_DIR-backup" 
-cp -a "$NEW_DIR_PATH/." "$PROJECT_DIR/" || exit 1
+# # Copy new files to the project directory
+# echo "Copying files to the project directory..."
+# mv "$PROJECT_DIR/" "$PROJECT_DIR-backup" 
+# cp -a "$NEW_DIR_PATH/." "$PROJECT_DIR/" || exit 1
 
 # Clean up the new directory after update
 # rm -rf "$NEW_DIR_PATH"
 
 # Restart Docker services
 echo "Restarting Docker services..."
-cd "$PROJECT_DIR" || exit 1
+cd "$NEW_DIR_PATH" || exit 1
 docker compose down || exit 1
-docker compose up -d || exit 1
+docker compose up -d --build --force-recreate|| exit 1
 
 echo "Update successfully applied and services restarted."
