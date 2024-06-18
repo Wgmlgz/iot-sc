@@ -3,11 +3,14 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
+# Store the current directory
+original_dir=$(pwd)
+
 # Function to configure apt and install dependencies
 configure_apt() {
     echo "Updating apt and installing necessary packages..."
     sudo apt update
-    sudo apt install git unzip jq -y
+    sudo apt install git unzip jq python3 ffmpeg v4l-utils -y
 }
 
 # Function to install Docker
@@ -21,6 +24,7 @@ install_docker() {
         "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
         sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+    sudo apt-get update
     sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 }
 
@@ -29,23 +33,26 @@ install_thingsboard_gateway() {
     cd /tmp
     wget https://github.com/thingsboard/thingsboard-gateway/releases/latest/download/python3-thingsboard-gateway.deb
     sudo apt install ./python3-thingsboard-gateway.deb -y
-    USER="thingsboard_gateway"
-    CMD="/bin/systemctl reboot"
-    FILE="/etc/sudoers"
-    cp $FILE ${FILE}.bak
-    grep -q "${USER} ALL=(ALL) NOPASSWD: ${CMD}" $FILE
+    TBUSER="thingsboard_gateway"
+    RCMD="/bin/systemctl reboot"
+    SFILE="/etc/sudoers"
+    cp $SFILE ${SFILE}.bak
+    grep -q "${TBUSER} ALL=(ALL) NOPASSWD: ${RCMD}" $SFILE
+
+    echo "Updating Thingsboard gateway user"
     if [ $? -eq 0 ]; then
         echo "Entry already exists, no changes made."
     else
-        echo "${USER} ALL=(ALL) NOPASSWD: ${CMD}" | sudo EDITOR="tee -a" visudo >/dev/null
+        echo "${TBUSER} ALL=(ALL) NOPASSWD: ${RCMD}" | sudo EDITOR="tee -a" visudo >/dev/null
         if [ $? -eq 0 ]; then
             echo "Sudoers file updated successfully."
         else
             echo "Failed to update sudoers file. Restoring backup."
-            cp ${FILE}.bak $FILE
+            cp ${SFILE}.bak $SFILE
         fi
     fi
     sudo usermod -a -G sudo thingsboard_gateway
+    echo "Thingsboard gateway installed"
 }
 
 # Function to configure directories
@@ -62,6 +69,9 @@ configure_directories() {
     mkdir -p $IOT_SC_DIR
     chmod 777  $IOT_SC_DIR
 
+    mkdir -p /opt/iot-sc
+    chmod 777 /opt/iot-sc
+
 
     # Merge the existing config with the example config
     if [ -f "$CONFIG_FILE" ]; then
@@ -76,7 +86,29 @@ configure_directories() {
     if [ -f "$CONFIG_FILE" ] && [ -f "$TB_GATEWAY_CONFIG_FILE" ]; then
         echo "Updating ThingsBoard Gateway configuration..."
         HOST=$(jq -r '.host' "$CONFIG_FILE")
-        ACCESS_TOKEN=$(jq -r '.auth_token' "$CONFIG_FILE")
+        DEVICE_ID=$(jq -r '.device_id' "$CONFIG_FILE")
+        AUTH_TOKEN=$(jq -r '.auth_token' "$CONFIG_FILE")
+
+        echo "Device ID: '$DEVICE_ID'"
+        echo "Auth Token: '$AUTH_TOKEN'"
+         # Check if the device_id or auth_token is missing
+        if [[ "$DEVICE_ID" = *"HERE"* || "$AUTH_TOKEN" = *"HERE"* ]]; then
+            echo "One or more required configurations (device_id or auth_token) are missing."
+            if [[ "$DEVICE_ID" = *"HERE"* ]]; then
+                echo "Please enter the device_id:"
+                read DEVICE_ID
+                jq ".device_id = \"$DEVICE_ID\"" "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+            fi
+            if [[ "$AUTH_TOKEN" = *"HERE"* ]]; then
+                echo "Please enter the auth_token:"
+                read AUTH_TOKEN
+                jq ".auth_token = \"$AUTH_TOKEN\"" "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+            fi
+            
+            # Recursively call the function to reprocess with updated configs
+            configure_directories
+            return
+        fi
 
         jq ".thingsboard.host = \"$HOST\" |
             .thingsboard.security.accessToken = \"$ACCESS_TOKEN\" |
@@ -92,11 +124,18 @@ configure_directories() {
 # Function to install the update agent
 install_update_agent() {
     echo "Installing Update Agent..."
+    # Restore the original directory
+    cd "$original_dir"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     source "$HOME/.cargo/env"
-    cd $HOME/iot-sc/update-agent
+    cd update-agent
     cargo build --release
     bash ./src/post_install.sh
+}
+
+install_main_service() {
+   echo "Installing Engine ..."
+   docker compose up --build --force-recreate -d
 }
 
 main() {
@@ -105,6 +144,7 @@ main() {
     install_thingsboard_gateway
     configure_directories
     install_update_agent
+    install_main_service
 }
 
 # Run the main function

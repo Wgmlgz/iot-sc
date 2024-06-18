@@ -6,7 +6,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     devices:
-      - "/dev/video0:/dev/video0"  # Map /dev/video0 from host to container
+      - "/dev/v4l/by-id/usb-USB_USB_SN0001-video-index0:/dev/video0"  # Map /dev/video0 from host to container
     restart: unless-stopped  # Restart policy to handle reboots and crashes
     volumes:
       - type: bind
