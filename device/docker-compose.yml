@@ -1,0 +1,14 @@
+version: '3.8'  # Use Docker Compose file version 3.8
+
+services:
+  device:
+    build: .  # Build the Dockerfile in the current directory
+    environment:
+      - PYTHONUNBUFFERED=1
+    devices:
+      - "/dev/video0:/dev/video0"  # Map /dev/video0 from host to container
+    restart: unless-stopped  # Restart policy to handle reboots and crashes
+    volumes:
+      - type: bind
+        source: /etc/iot-sc/
+        target: /etc/iot-sc/

@@ -1,0 +1,12 @@
+{
+  "camera_name": "0",
+  "interval": 60,
+  "device_id": "DEVICE_ID_HERE",
+  "auth_token": "AUTH_TOKEN_HERE",
+  "host": "158.160.155.134",
+  "port": "1883",
+  "thingsboard_url": "http://158.160.155.134:8080",
+  "thingsboard_host": "158.160.155.134",
+  "api_url": "https://bba1jmve6dp0u4ntatos.containers.yandexcloud.net",
+  "output_file": "output.mp4"
+}
