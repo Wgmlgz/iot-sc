@@ -37,10 +37,14 @@ install_thingsboard_gateway() {
     RCMD="/bin/systemctl reboot"
     SFILE="/etc/sudoers"
     cp $SFILE ${SFILE}.bak
+
+    set +e
     grep -q "${TBUSER} ALL=(ALL) NOPASSWD: ${RCMD}" $SFILE
+    result=$?
+    set -e
 
     echo "Updating Thingsboard gateway user"
-    if [ $? -eq 0 ]; then
+    if [ $result -eq 0 ]; then
         echo "Entry already exists, no changes made."
     else
         echo "${TBUSER} ALL=(ALL) NOPASSWD: ${RCMD}" | sudo EDITOR="tee -a" visudo >/dev/null
@@ -72,6 +76,8 @@ configure_directories() {
     mkdir -p /opt/iot-sc
     chmod 777 /opt/iot-sc
 
+    mkdir -p /opt/iot-sc/temp-update
+    chmod 777 /opt/iot-sc/temp-update
 
     # Merge the existing config with the example config
     if [ -f "$CONFIG_FILE" ]; then
@@ -111,7 +117,7 @@ configure_directories() {
         fi
 
         jq ".thingsboard.host = \"$HOST\" |
-            .thingsboard.security.accessToken = \"$ACCESS_TOKEN\" |
+            .thingsboard.security.accessToken = \"$AUTH_TOKEN\" |
             .thingsboard.remoteShell = true" "$TB_GATEWAY_CONFIG_FILE" >"$TB_GATEWAY_CONFIG_FILE.tmp" && mv "$TB_GATEWAY_CONFIG_FILE.tmp" "$TB_GATEWAY_CONFIG_FILE"
     else
         echo "Required configuration files are missing."
@@ -149,50 +155,3 @@ main() {
 
 # Run the main function
 main
-# cd ~
-# curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
-# unzip awscliv2.zip
-# sudo ./aws/install
-
-# install swUpdate
-# sudo apt install swupdate
-# Install necessary libraries
-# sudo apt-get install -y \
-#     build-essential \
-#     pkg-config \
-#     libncurses5-dev \
-#     libncursesw5-dev \
-#     libssl-dev \
-#     libconfig-dev \
-#     libjson-c-dev \
-#     zlib1g-dev \
-#     liblzma-dev \
-#     liblzo2-dev \
-#     libubootenv-tool \
-#     libmtd-dev \
-#     libcurl4-openssl-dev \
-#     lua5.3
-
-# export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig:$PKG_CONFIG_PATH
-
-# cd /usr/lib/arm-linux-gnueabihf/pkgconfig
-# sudo ln -s lua-5.3.pc lua.pc
-
-# cd ~/swupdate
-# # # Install additional tools that might be useful for debugging or additional support
-# sudo apt-get install -y \
-#     curl \
-#     git
-
-# sudo apt-get install mtd-utils libmtd-dev mtd-utils  libubi-dev libarchive-dev
-
-# # # Confirm installation
-# echo "All necessary dependencies for SWUpdate have been installed."
-
-# cd ~
-# # git clone https://github.com/sbabic/swupdate.git
-# cd swupdate
-# make menuconfig
-# make
-# make install
-# swupdate -l 5 -w '-r ./examples/www/v2 -p 8080'

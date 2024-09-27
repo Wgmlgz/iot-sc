@@ -158,10 +158,8 @@ def apply_upgrade(version_from, version_to, firmware_archive_path):
     remove_directory(extraction_directory)
     extract_firmware(firmware_archive_path, extraction_directory)
     trigger_update_agent(update_script_command, update_agent_url)
-    for x in range(5):
-        sleep(1)
-        print(20 * x, "%", sep="")
-    print(f"Firmware is updated!\n Current firmware version is: {version_to}")
+    
+    raise Exception('Unreachable, update agent failed')
 
 
 def check_updates():

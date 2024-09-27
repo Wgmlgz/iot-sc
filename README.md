@@ -8,7 +8,7 @@ ssh root@192.168.15.151  # for boxprm-test2
 ssh root@192.168.15.156  # for boxprm-test3
 ```
 
-# Installing
+## Installing
 
 - create device in thingsboard 
 - assing to asset
@@ -19,12 +19,26 @@ as root:
 scp -r ~/iot-sc root@IP_ADDRESS_HERE:~/iot-sc
 ssh root@IP_ADDRESS_HERE
 cd iot-sc
-bash ./install.sh
-nano /etc/iot-sc/config.json # set device_id and auth_token
+bash ./install.sh # enter device id and access token when promps
 ```
 
-# Creating update
+## Creating update
 
 ``` sh
 bash create_package.sh
+```
+
+## config 
+
+```
+nano /etc/iot-sc/config.json
+```
+
+## thingsboard-gateway
+
+```
+systemctl restart thingsboard-gateway
+systemctl status thingsboard-gateway
+
+journalctl -u thingsboard-gateway.service -b
 ```
